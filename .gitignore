@@ -13,3 +13,7 @@ flattened.txt
 
 coverage/
 coverage.json
+
+out/
+cache/
+.vscode/

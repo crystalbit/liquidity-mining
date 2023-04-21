@@ -26,18 +26,18 @@ contract('Changing clny pool', (accounts) => {
   });
 
   it('Change clny pool', async () => {
-    oldPool = await chef.clnyPool();
-    await chef.changeClnyPool(user3, { from: ownerOfAll });
-    expect(await chef.clnyPool()).to.be.equal(user3);
+    oldPool = await chef.rewardPool();
+    await chef.changeRewardPool(user3, { from: ownerOfAll });
+    expect(await chef.rewardPool()).to.be.equal(user3);
   });
 
   it('Change clny pool back', async () => {
-    await chef.changeClnyPool(oldPool, { from: ownerOfAll });
-    expect(await chef.clnyPool()).to.be.equal(oldPool);
+    await chef.changeRewardPool(oldPool, { from: ownerOfAll });
+    expect(await chef.rewardPool()).to.be.equal(oldPool);
   });
 
   it('Change clny pool - only owner', async () => {
-    await expectRevert(chef.changeClnyPool(user3, { from: user1 }), 'Ownable: caller is not the owner');
+    await expectRevert(chef.changeRewardPool(user3, { from: user1 }), 'Ownable: caller is not the owner');
   });
 
 });

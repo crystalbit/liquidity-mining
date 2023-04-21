@@ -2,5 +2,5 @@
 pragma solidity 0.8.19;
 
 interface ChefInterface {
-  function clnyPerSecond() external view returns (uint256);
+  function rewardPerSecond() external view returns (uint256);
 }

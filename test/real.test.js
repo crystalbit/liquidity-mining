@@ -13,7 +13,7 @@ const TestLPToken = artifacts.require('TestLPToken');
 const ColonyChef = artifacts.require('ColonyChef');
 
 contract('Changing price and staking', (accounts) => {
-  const [ownerOfAll, user1, user2, user3, user4, user5] = accounts;
+  const [ownerOfAll, user1, user2, user3] = accounts;
 
   let clny;
   let lp;
@@ -45,7 +45,6 @@ contract('Changing price and staking', (accounts) => {
     await lp.approve(chef.address, constants.MAX_UINT256, { from: user1 });
     await lp.approve(chef.address, constants.MAX_UINT256, { from: user2 });
     await lp.approve(chef.address, constants.MAX_UINT256, { from: user3 });
-    assert(await chef.providerCount() == 0);
   });
 
   const D = user1;
@@ -53,7 +52,7 @@ contract('Changing price and staking', (accounts) => {
   const P = user3;
 
   it('Set 12 clny/day; D stakes 2 slp at 1 days', async () => {
-    await chef.changeClnyPerSecond(Math.floor(ether('12') / 86400), { gas: 400_000 });
+    await chef.changeRewardPerSecond(Math.floor(ether('12') / 86400), { gas: 400_000 });
     await time.increase(60 * 60 * 24);
     await chef.deposit(ether('2'), { from: D });
   });
@@ -70,14 +69,12 @@ contract('Changing price and staking', (accounts) => {
 
   it('Set 48 clny/day 100 min later', async () => {
     await time.increase(60 * 100);
-    const providers = await chef.getProviders();
-    await chef.changeClnyPerSecond(Math.floor(ether('48') / 86400), { gas: 400_000 });
+    await chef.changeRewardPerSecond(Math.floor(ether('48') / 86400), { gas: 400_000 });
   });
 
   it('Set 6 clny/day 115 min later', async () => {
     await time.increase(60 * 115);
-    const providers = await chef.getProviders();
-    await chef.changeClnyPerSecond(Math.floor(ether('6') / 86400), { gas: 400_000 });
+    await chef.changeRewardPerSecond(Math.floor(ether('6') / 86400), { gas: 400_000 });
   });
 
   it('D stakes 2 slp', async () => {
@@ -95,8 +92,7 @@ contract('Changing price and staking', (accounts) => {
   });
 
   it('Set 96 clny/day', async () => {
-    const providers = await chef.getProviders();
-    await chef.changeClnyPerSecond(Math.floor(ether('96') / 86400), { gas: 400_000 });
+    await chef.changeRewardPerSecond(Math.floor(ether('96') / 86400), { gas: 400_000 });
   });
 
   it('E unstakes 1 slp 5 min later', async () => {
@@ -106,14 +102,13 @@ contract('Changing price and staking', (accounts) => {
 
   it('Stop 85 min later', async () => {
     await time.increase(60 * 85);
-    const providers = await chef.getProviders();
-    await chef.changeClnyPerSecond(ether('0'), { gas: 400_000 });
+    await chef.changeRewardPerSecond(ether('0'), { gas: 400_000 });
   });
 
   it('Withdraw later', async () => {
     await time.increase(60 * 60 * 24 * 365);
     await chef.withdraw(ether('4'), { from: D });
-    await chef.withdraw(ether('1'), { from: E });
+    await chef.withdraw(ether('1'), { from: E, gas: 400_000 });
     await chef.withdraw(ether('2'), { from: P });
     // user1 slp 100.000 clny 5.282
     // user2 slp 100.000 clny 2.635

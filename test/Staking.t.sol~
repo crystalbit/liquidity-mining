@@ -16,11 +16,14 @@ contract StakingTest is Test {
     ColonyChef chef;
     TestClnyToken clny;
     TestLPToken lp;
-    address pool = address(4343);
+    address pool = address(43444343);
+    address owner = address(456354354);
     address user1 = address(534533455);
     address user2 = address(243423423);
 
     function setUp() public {
+        vm.startPrank(owner);
+        vm.deal(owner, 100 ether);
         vm.deal(user1, 100 ether);
         vm.deal(user2, 100 ether);
         clny = new TestClnyToken();
@@ -32,23 +35,21 @@ contract StakingTest is Test {
         clny.approve(address(chef), type(uint256).max);
         lp.transfer(user1, 100 ether);
         lp.transfer(user2, 100 ether);
-        vm.prank(user1);
+        changePrank(user1);
         lp.approve(address(chef), type(uint256).max);
-        vm.prank(user2);
+        changePrank(user2);
         lp.approve(address(chef), type(uint256).max);
 
-        vm.prank(user1);
+        changePrank(user1);
         chef.deposit(10 ether);
         vm.warp(1 days);
-        vm.prank(user1);
         chef.withdraw(10 ether);
 
         // User1 stakes after 24h
         vm.warp(1 days);
-        vm.prank(user1);
         chef.deposit(10 ether);
         // User2 stakes
-        vm.startPrank(user2);
+        changePrank(user2);
         chef.deposit(1 ether);
         chef.deposit(1 ether);
         chef.deposit(1 ether);
@@ -61,12 +62,17 @@ contract StakingTest is Test {
         chef.deposit(1 ether);
         // User1 unstakes after 24h
         vm.warp(1 days);
-        (uint256 amount, uint256 rewardDebt, uint256 toPay) = chef.userInfo(user1);
+        (uint256 amount, , ) = chef.userInfo(user1);
         changePrank(user1);
         chef.withdraw(amount);
         // User2 unstakes
-        (uint256 amount2, uint256 rewardDebt2, uint256 toPay2) = chef.userInfo(user2);
+        (uint256 amount2, , ) = chef.userInfo(user2);
         changePrank(user2);
         chef.withdraw(amount2);
+
+        assertEq(lp.balanceOf(user1), 100 ether);
+        console.log(clny.balanceOf(user1));
+        assertEq(lp.balanceOf(user2), 100 ether);
+        console.log(clny.balanceOf(user2));
     }
 }

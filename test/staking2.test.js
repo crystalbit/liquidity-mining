@@ -84,7 +84,7 @@ contract('Staking', (accounts) => {
   });
 
   it('User6 unstakes 2 slp at 4 days', async () => {
-    await chef.withdraw(ether('2'), { from: user6 });
+    await chef.withdraw(ether('2'), { from: user6, gas: 400_000 });
     const slp3 = await lp.balanceOf(user3) * 1e-18;
     const clny3 = await clny.balanceOf(user3) * 1e-18;
     const slp4 = await lp.balanceOf(user4) * 1e-18;

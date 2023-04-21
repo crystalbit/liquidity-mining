@@ -1,6 +1,6 @@
 const ColonyChef = artifacts.require('ColonyChef');
 const ERC20 = artifacts.require('ERC20');
-const LPStats = artifacts.require('LPStats');
+const LPStats = artifacts.require('LPStatsUsdcClny');
 
 module.exports = async (deployer, network, accounts) => {
   if (network === 'development') {

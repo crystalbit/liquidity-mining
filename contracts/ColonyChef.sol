@@ -4,102 +4,71 @@ pragma solidity 0.8.19;
 
 import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 import '@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol';
-import '@openzeppelin/contracts/utils/structs/EnumerableSet.sol';
 import '@openzeppelin/contracts/access/Ownable.sol';
 
 
-// ColonyChef is the master of ColonyToken. He can make CLNY and he is a fair guy. (Forked from SUSHI MasterChef)
-//
-// Note that it's ownable and the owner wields tremendous power. The ownership
-// will be transferred to a governance smart contract once ColonyToken is sufficiently
-// distributed and the community can show to govern itself.
-//
-// Have fun reading it. Hopefully it's bug-free. God bless.
+// Forked from SUSHI MasterChef
 contract ColonyChef is Ownable {
     using SafeERC20 for IERC20;
-    using EnumerableSet for EnumerableSet.AddressSet;
-    // Info of each user.
     struct UserInfo {
         uint256 amount; // How many LP tokens the user has provided.
         uint256 rewardDebt; // Reward debt. See explanation below.
-        uint256 toPay; // stored info to pay
         //
-        // We do some fancy math here. Basically, any point in time, the amount of ColonyToken
+        // We do some fancy math here. Basically, any point in time, the amount of reward token
         // entitled to a user but is pending to be distributed is:
         //
-        //   pending reward = (user.amount * accColonyPerShare) - user.rewardDebt + user.toPay
+        //   pending reward = (user.amount * accRewardPerShare) - user.rewardDebt
         //
         // Whenever a user deposits or withdraws LP tokens to a pool. Here's what happens:
-        //   1. The pool's `accColonyPerShare` (and `lastRewardTime`) gets updated.
+        //   1. The pool's `accRewardPerShare` (and `lastRewardTime`) gets updated.
         //   2. User receives the pending reward sent to his/her address. - UPD only for withdraw
         //   3. User's `amount` gets updated.
         //   4. User's `rewardDebt` gets updated.
     }
 
 
-    IERC20 public lpToken; // Address of LP token contract.
-    uint256 public lastRewardTime; // Last time number that CLNYs distribution occurs.
-    uint256 public accColonyPerShare; // Accumulated CLNYs per share, times 1e12. See below.
-    // The CLNY TOKEN!
-    IERC20 public clnyToken;
-    // Liquidity pool - funds should be approved for this contract
-    address public clnyPool;
-    // CLNY tokens got from liquidity wallet per 1 second.
-    uint256 public clnyPerSecond;
-    // Info of each user that stakes LP tokens.
+    IERC20 public lpToken;
+    uint256 public lastRewardTime;
+    uint256 public accRewardPerShare; // Accumulated RewardToken per share, times 1e12
+    IERC20 public rewardToken;
+    address public rewardPool;
+    uint256 public rewardPerSecond;
     mapping(address => UserInfo) public userInfo;
-    // list of liquidity providers
-    EnumerableSet.AddressSet private providers;
 
     event Deposit(address indexed user, uint256 amount);
     event Withdraw(address indexed user, uint256 amount);
     event EmergencyWithdraw(address indexed user, uint256 amount);
-    event SetClnyPerSecond(uint256 amount);
+    event SetRewardPerSecond(uint256 amount);
 
     constructor(
-        IERC20 _clnyToken,
+        IERC20 _rewardToken,
         IERC20 _lpToken,
-        address _clnyPool,
-        uint256 _clnyPerSecond,
+        address _rewardPool,
+        uint256 _rewardPerSecond,
         uint256 _startTime
     ) {
-        clnyToken = _clnyToken;
+        rewardToken = _rewardToken;
         lpToken = _lpToken;
-        clnyPool = _clnyPool;
-        clnyPerSecond = _clnyPerSecond;
-        // The time when CLNY distribution starts.
+        rewardPool = _rewardPool;
+        rewardPerSecond = _rewardPerSecond;
+        // The time when reward token distribution starts.
         lastRewardTime = _startTime;
     }
 
-    // View function with providers count
-    function providerCount() view external returns (uint256) {
-        return providers.length();
-    }
-
-    // Get provider at index
-    function getProvider(uint256 index) view external returns (address) {
-        return providers.at(index);
-    }
-
-    // Get providers
-    function getProviders() view external returns (address[] memory) {
-        return providers.values();
-    }
-
-    // View function to see pending ColonyToken on frontend.
-    function pendingClny(address _user) external view returns (uint256) {
+    // View function to see pending reward tokens on frontend.
+    function pendingReward(address _user) external view returns (uint256) {
         UserInfo storage user = userInfo[_user];
         uint256 lpSupply = lpToken.balanceOf(address(this));
-        uint256 _accColonyPerShare = accColonyPerShare;
+        uint256 _accRewardPerShare = accRewardPerShare;
         if (block.timestamp > lastRewardTime && lpSupply != 0) {
-            uint256 clnyReward = (block.timestamp - lastRewardTime) * clnyPerSecond;
-            _accColonyPerShare = _accColonyPerShare + clnyReward * 1e12 / lpSupply;
+            uint256 reward = (block.timestamp - lastRewardTime) * rewardPerSecond;
+            _accRewardPerShare = _accRewardPerShare + reward * 1e12 / lpSupply;
         }
-        return user.amount * _accColonyPerShare / 1e12 - user.rewardDebt + user.toPay;
+        return user.amount * _accRewardPerShare / 1e12 - user.rewardDebt;
     }
 
     // Update reward variables to be up-to-date.
-    function updatePool() public {
+    function updatePool() internal {
         if (block.timestamp <= lastRewardTime) {
             return;
         }
@@ -108,23 +77,23 @@ contract ColonyChef is Ownable {
             lastRewardTime = block.timestamp;
             return;
         }
-        uint256 clnyReward = (block.timestamp - lastRewardTime) * clnyPerSecond;
-        accColonyPerShare = accColonyPerShare + clnyReward * 1e12 / lpSupply;
+        uint256 reward = (block.timestamp - lastRewardTime) * rewardPerSecond;
+        accRewardPerShare = accRewardPerShare + reward * 1e12 / lpSupply;
         lastRewardTime = block.timestamp;
-        clnyToken.safeTransferFrom(address(clnyPool), address(this), clnyReward);
+        rewardToken.safeTransferFrom(address(rewardPool), address(this), reward);
     }
 
-    // Deposit LP tokens to ColonyChef for CLNY allocation.
+    // Deposit LP tokens to ColonyChef for reward token allocation.
     function deposit(uint256 _amount) external {
         require(_amount > 0, 'zero deposit');
         UserInfo storage user = userInfo[msg.sender];
         updatePool();
-        if (user.amount > 0 || user.toPay > 0) {
-            user.toPay = user.toPay + user.amount * accColonyPerShare / 1e12 - user.rewardDebt;
+        uint256 pending = 0;
+        if (user.amount > 0) {
+            pending = user.amount * accRewardPerShare / 1e12 - user.rewardDebt;
         }
         user.amount = user.amount + _amount;
-        user.rewardDebt = user.amount * accColonyPerShare / 1e12;
-        providers.add(msg.sender);
+        user.rewardDebt = user.amount * accRewardPerShare / 1e12 - pending;
         lpToken.safeTransferFrom(
             address(msg.sender),
             address(this),
@@ -139,26 +108,22 @@ contract ColonyChef is Ownable {
         UserInfo storage user = userInfo[msg.sender];
         require(user.amount >= _amount, 'withdraw: not good');
         updatePool();
-        uint256 pending = user.toPay + user.amount * accColonyPerShare / 1e12 - user.rewardDebt;
+        uint256 pending = user.amount * accRewardPerShare / 1e12 - user.rewardDebt;
         user.amount = user.amount - _amount;
-        user.rewardDebt = (user.amount * accColonyPerShare) / 1e12;
-        user.toPay = 0;
-        if (user.amount == 0) {
-            providers.remove(msg.sender);
-        }
-        safeClnyTransfer(msg.sender, pending);
+        user.rewardDebt = user.amount * accRewardPerShare / 1e12;
+        safeRewardTransfer(msg.sender, pending);
         lpToken.safeTransfer(msg.sender, _amount);
         emit Withdraw(msg.sender, _amount);
     }
 
-    function changeClnyPerSecond(uint256 newSpeed) external onlyOwner {
+    function changeRewardPerSecond(uint256 newSpeed) external onlyOwner {
         updatePool();
-        clnyPerSecond = newSpeed;
-        emit SetClnyPerSecond(newSpeed);
+        rewardPerSecond = newSpeed;
+        emit SetRewardPerSecond(newSpeed);
     }
 
-    function changeClnyPool(address _address) external onlyOwner {
-      clnyPool = _address;
+    function changeRewardPool(address _address) external onlyOwner {
+      rewardPool = _address;
     }
 
     // Withdraw without caring about rewards. EMERGENCY ONLY.
@@ -171,14 +136,14 @@ contract ColonyChef is Ownable {
         emit EmergencyWithdraw(msg.sender, _amount);
     }
 
-    // Safe ColonyToken transfer function, just in case if pool doesn't have enough CLNY.
-    function safeClnyTransfer(address _to, uint256 _amount) internal {
-        uint256 clnyBal = clnyToken.balanceOf(address(this));
+    // safeRewardTransfer transfer function, just in case if pool doesn't have enough reward token.
+    function safeRewardTransfer(address _to, uint256 _amount) internal {
+        uint256 rewardBal = rewardToken.balanceOf(address(this));
         bool result = false;
-        if (_amount > clnyBal) {
-            result = clnyToken.transfer(_to, clnyBal);
+        if (_amount > rewardBal) {
+            result = rewardToken.transfer(_to, rewardBal);
         } else {
-            result = clnyToken.transfer(_to, _amount);
+            result = rewardToken.transfer(_to, _amount);
         }
         require(result, 'transfer failed');
     }

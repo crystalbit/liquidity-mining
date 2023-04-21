@@ -33,7 +33,6 @@ contract('Emergency withdraw', (accounts) => {
     await clny.approve(chef.address, constants.MAX_UINT256, { from: ownerOfAll });
     await lp.transfer(user1, ether('100'), { from: ownerOfAll });
     await lp.approve(chef.address, constants.MAX_UINT256, { from: user1 });
-    assert(await chef.providerCount() == 0);
   });
 
   it('Deposit', async () => {

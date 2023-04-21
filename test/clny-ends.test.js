@@ -32,8 +32,7 @@ contract('When CLNY ends', (accounts) => {
     await clny.approve(chef.address, constants.MAX_UINT256, { from: ownerOfAll });
     await lp.transfer(user1, ether('100'), { from: ownerOfAll });
     await lp.approve(chef.address, constants.MAX_UINT256, { from: user1 });
-    assert(await chef.providerCount() == 0);
-    await chef.changeClnyPerSecond(Math.floor(ether('100') / 86400), { from: ownerOfAll });
+    await chef.changeRewardPerSecond(Math.floor(ether('100') / 86400), { from: ownerOfAll });
     await chef.deposit(ether('2'), { from: user1 });
     await time.increase(60 * 60 * 24 * 30);
   });

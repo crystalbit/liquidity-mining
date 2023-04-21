@@ -44,6 +44,7 @@ contract('Staking', (accounts) => {
     await lp.transfer(user2, ether('100'), { from: ownerOfAll });
     await lp.approve(chef.address, constants.MAX_UINT256, { from: user1 });
     await lp.approve(chef.address, constants.MAX_UINT256, { from: user2 });
+    time.increase(60 * 60 * 24);
   });
 
   it('User1 stakes', async () => {
@@ -91,8 +92,8 @@ contract('Staking', (accounts) => {
     const clny2 = await clny.balanceOf(user2) * 1e-18;
     assert(Math.round(slp1) === 100);
     assert(Math.round(slp2) === 100);
-    expect(clny1).to.be.above(1050);
-    expect(clny1).to.be.below(1065);
+    expect(clny1).to.be.above(3150);
+    expect(clny1).to.be.below(3200);
     expect(clny2).to.be.above(1050);
     expect(clny2).to.be.below(1065);
   });

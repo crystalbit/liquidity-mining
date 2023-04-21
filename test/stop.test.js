@@ -36,7 +36,6 @@ contract('Changing price and staking', (accounts) => {
   // chef clny balance shall be 0
   after(async () => {
     const balance = await clny.balanceOf(chef.address);
-    console.log(balance * 1e-18)
   });
 
   it('Approve, transfer', async () => {
@@ -51,7 +50,6 @@ contract('Changing price and staking', (accounts) => {
     await lp.approve(chef.address, constants.MAX_UINT256, { from: user3 });
     await lp.approve(chef.address, constants.MAX_UINT256, { from: user4 });
     await lp.approve(chef.address, constants.MAX_UINT256, { from: user5 });
-    assert(await chef.providerCount() == 0);
   });
 
   it('User3 stakes 1 slp at 0 days', async () => {
@@ -78,10 +76,7 @@ contract('Changing price and staking', (accounts) => {
 
   it('Manually changing reward to 1000 at 2 day', async () => {
     await time.increase(60 * 60 * 24 * 1);
-    const providers = await chef.getProviders();
-    assert(providers.length === 5);
-    assert(providers.includes(user1) && providers.includes(user2) && providers.includes(user3) && providers.includes(user4) && providers.includes(user5));
-    await chef.changeClnyPerSecond(ether(new BN(1000)).div(new BN(86400)), { gas: 400_000 });
+    await chef.changeRewardPerSecond(ether(new BN(1000)).div(new BN(86400)), { gas: 400_000 });
   });
 
   it('User2 unstakes 2 slp at 2.5 days', async () => {
@@ -95,28 +90,16 @@ contract('Changing price and staking', (accounts) => {
   });
 
   it('Manually changing reward to 2000 at 3 day', async () => {
-    const providers = await chef.getProviders();
-    assert(providers.length === 3);
-    assert(providers.includes(user1) && providers.includes(user3) && providers.includes(user4));
-
-    await chef.changeClnyPerSecond(ether(new BN(2000)).div(new BN(86400)), { gas: 400_000 });
+    await chef.changeRewardPerSecond(ether(new BN(2000)).div(new BN(86400)), { gas: 400_000 });
   });
 
   it('Manually changing reward to 0 at 4 day', async () => {
     await time.increase(60 * 60 * 24 * 1);
-    const providers = await chef.getProviders();
-    assert(providers.length === 3);
-    assert(providers.includes(user1) && providers.includes(user3) && providers.includes(user4));
-
-    await chef.changeClnyPerSecond(ether('0'), { gas: 400_000 });
-    // await chef.changeClnyPerSecond(ether('1'), { gas: 400_000 });
-    // await chef.changeClnyPerSecond(ether('0'), { gas: 400_000 });
+    await chef.changeRewardPerSecond(ether('0'), { gas: 400_000 });
+    // await chef.changeRewardPerSecond(ether('1'), { gas: 400_000 });
+    // await chef.changeRewardPerSecond(ether('0'), { gas: 400_000 });
 
     await chef.withdraw(0, { from: user1, gas: 400_000 });
-
-    console.log(await chef.pendingClny(user1))
-    console.log(await chef.pendingClny(user2))
-    console.log(await chef.pendingClny(user3))
   });
 
   it('User1 unstakes 2 slp at 4.5 day', async () => {

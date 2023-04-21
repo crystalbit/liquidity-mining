@@ -13,7 +13,7 @@ const TestLPToken = artifacts.require('TestLPToken');
 const ColonyChef = artifacts.require('ColonyChef');
 
 contract('Restrictions', (accounts) => {
-  const [ownerOfAll, user1, user2, user3, user4, user5, user6, user7, user8, user9] = accounts;
+  const [ownerOfAll, user1, user2] = accounts;
 
   let clny;
   let lp;
@@ -40,7 +40,7 @@ contract('Restrictions', (accounts) => {
   it('changeClnyPerSecond - ownable', async () => {
     time.increase(60 * 60 * 24);
     time.increase(60 * 60 * 24);
-    await chef.changeClnyPerSecond(ether('3'), { from: ownerOfAll });
-    await expectRevert(chef.changeClnyPerSecond(ether('5'), { from: user1 }), 'caller is not the owner');
+    await chef.changeRewardPerSecond(ether('3'), { from: ownerOfAll });
+    await expectRevert(chef.changeRewardPerSecond(ether('5'), { from: user1 }), 'caller is not the owner');
   });
 });

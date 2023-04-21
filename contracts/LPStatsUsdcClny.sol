@@ -50,7 +50,7 @@ contract LPStatsUsdcClny {
   }
 
   function getDailyClnyRewards() public view returns (uint256) {
-    return CHEF.clnyPerSecond() * 60 * 60 * 24;
+    return CHEF.rewardPerSecond() * 60 * 60 * 24;
   }
 
   function getYearlyDollarRewards() public view returns (uint256) {
